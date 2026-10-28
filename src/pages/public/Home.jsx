@@ -58,27 +58,15 @@ export default function Home() {
     <>
       <PubHead />
       <section className="hero pad">
-        <div className="in">
-          <h1 className="brand-hero">{(() => { const [a, ...r] = String(site.nom || '').split(' '); return <><span>{a}</span>{r.length ? ' ' + r.join(' ') : ''}</>; })()}</h1>
-          <p className="hero-slogan">{site.slogan}</p>
-          <span className="small" style={{ letterSpacing: '.1em', textTransform: 'uppercase', opacity: .8 }}>{site.matieres}</span>
-          <p>{site.apropos}</p>
-          <div className="row">
-            <Link className="btn primary" to="/inscription">Inscrire un élève</Link>
-            <Link className="btn ghost" style={{ color: 'var(--chalk)', borderColor: 'rgba(255,255,255,.35)' }} to="/connexion">Accéder à mes cours</Link>
+        <div className="in hero-grid">
+          <div className="hero-photo">
+            <img src="/img/prof.webp" alt={`${site.prof}, professeur`} width="800" height="999" fetchpriority="high" />
+            <span className="hero-badge"><b>{site.prof}</b><small>Votre professeur</small></span>
           </div>
-        </div>
-      </section>
-
-      <section className="prof-band pad">
-        <div className="prof-in">
-          <div className="prof-photo">
-            <img src="/img/prof.webp" alt={`${site.prof}, professeur`} loading="lazy" width="800" height="999" />
-          </div>
-          <div className="stack prof-txt">
-            <span className="eyebrow">Votre professeur</span>
-            <h2 className="prof-nom">{site.prof}</h2>
-            <p className="prof-matieres">{site.matieres}</p>
+          <div className="stack hero-txt">
+            <h1 className="brand-hero">{(() => { const [a, ...r] = String(site.nom || '').split(' '); return <><span>{a}</span>{r.length ? ' ' + r.join(' ') : ''}</>; })()}</h1>
+            <p className="hero-slogan">{site.slogan}</p>
+            <span className="small" style={{ letterSpacing: '.1em', textTransform: 'uppercase', opacity: .85, color: '#9be3ff' }}>{site.matieres}</span>
             <p>{site.apropos}</p>
             <ul className="prof-points">
               <li>Du primaire au Bac, avec préparation au CFEE, au BFEM et au Bac</li>
@@ -86,8 +74,9 @@ export default function Home() {
               <li>Parents informés des notes et des paiements</li>
             </ul>
             <div className="row">
-              <a className="btn primary" href={wa} target="_blank" rel="noreferrer">Parler au professeur</a>
-              <Link className="btn ghost prof-ghost" to="/inscription">Inscrire mon enfant</Link>
+              <Link className="btn primary" to="/inscription">Inscrire un élève</Link>
+              <a className="btn ghost prof-ghost" href={wa} target="_blank" rel="noreferrer">Parler au professeur</a>
+              <Link className="btn ghost prof-ghost" to="/connexion">Accéder à mes cours</Link>
             </div>
           </div>
         </div>

@@ -127,7 +127,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .pub-head a.logo{font-family:var(--display);font-weight:800;font-size:19px;text-decoration:none;min-width:0}
 .pub-head .row{flex-wrap:nowrap}
 .hero{background:#02050f;color:var(--chalk);padding-block:clamp(56px,10vw,120px);position:relative;overflow:hidden;
-  background-image:linear-gradient(90deg,rgba(2,5,15,.97) 0%,rgba(2,5,15,.85) 38%,rgba(2,5,15,.15) 75%,rgba(2,5,15,0) 100%),url(/img/hero.webp);
+  background-image:linear-gradient(90deg,rgba(2,5,15,.9) 0%,rgba(2,5,15,.78) 50%,rgba(2,5,15,.55) 100%),url(/img/hero.webp);
   background-size:100% 100%,auto 100%;background-repeat:no-repeat;background-position:center,right center}
 @media(max-width:720px){.hero{background-color:#02050f;background-image:linear-gradient(180deg,rgba(2,5,15,.3) 0%,rgba(2,5,15,.7) 60%,#02050f 100%),url(/img/hero.webp);background-size:100% 440px,auto 440px;background-repeat:no-repeat;background-position:center top,62% top;padding-block:190px 48px}}
 .hero h1,.hero p{text-shadow:0 2px 14px rgba(0,0,0,.45)}
@@ -197,3 +197,16 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .prof-points{margin:0;padding-left:20px;display:grid;gap:6px;opacity:.95}
 .prof-ghost{color:var(--chalk);border-color:rgba(255,255,255,.35)}
 @media(max-width:720px){.prof-in{grid-template-columns:1fr}.prof-photo{max-width:340px;margin:0 auto 8px}}
+
+/* Prof en premier plan dans l'en-tête */
+.hero-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(24px,5vw,64px);align-items:center;max-width:1180px}
+.hero-photo{position:relative}
+.hero-photo::before{content:"";position:absolute;inset:16px -14px -14px 16px;border:2px solid #4fa8ff;border-radius:24px;opacity:.7}
+.hero-photo img{position:relative;width:100%;height:auto;aspect-ratio:800/999;object-fit:cover;border-radius:22px;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.hero-badge{position:absolute;left:16px;bottom:16px;background:rgba(5,15,40,.82);backdrop-filter:blur(6px);border:1px solid rgba(111,184,255,.35);border-radius:14px;padding:10px 14px;display:grid;line-height:1.25}
+.hero-badge b{font-family:var(--display);font-size:18px}
+.hero-badge small{color:#9be3ff;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.hero .hero-txt{gap:16px}
+.hero h1.brand-hero{font-size:clamp(54px,9vw,112px)}
+@media(max-width:860px){.hero-grid{grid-template-columns:1fr}.hero-photo{max-width:380px;width:100%;margin:0 auto}}
+@media(max-width:720px){.hero{padding-block:28px 48px!important;background-size:100% 100%,auto 360px!important}}
