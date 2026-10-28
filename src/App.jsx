@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useMe, useData, logout, resetDemo } from './data/store.js';
 import Home from './pages/public/Home.jsx';
 import Inscription from './pages/public/Inscription.jsx';
@@ -26,7 +26,7 @@ function DemoBar() {
   return (
     <div className="demo pad">
       <span>Version de démonstration : les données restent sur cet appareil.</span>
-      <button onClick={() => { resetDemo(); location.href = '/'; }}>Réinitialiser la démo</button>
+      <button onClick={() => { resetDemo(); window.location.reload(); }}>Réinitialiser la démo</button>
     </div>
   );
 }
@@ -148,9 +148,12 @@ function EleveArea() {
   );
 }
 
+// Hébergement classique : vraies URL. Aperçu Claude (VITE_ARTIFACT) : routeur en mémoire.
+const Router = import.meta.env.VITE_ARTIFACT ? MemoryRouter : BrowserRouter;
+
 export default function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route path="/" element={<><DemoBar /><Home /></>} />
         <Route path="/inscription" element={<><DemoBar /><Inscription /></>} />
@@ -159,6 +162,6 @@ export default function App() {
         <Route path="/eleve/*" element={<EleveArea />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }

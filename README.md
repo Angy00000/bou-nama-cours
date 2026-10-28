@@ -1,8 +1,15 @@
-# React + Vite
+# Bou Nama Cours
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Plateforme de cours pour enseignant : site public d'inscription, espace professeur, espace élève.
 
-Currently, two official plugins are available:
+## Lancer
+npm install
+npm run dev
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## État actuel
+Mode démo : les données sont stockées dans le navigateur (src/data/store.js).
+Prochaine étape : remplacer les fonctions de store.js par des appels Supabase
+(auth par téléphone, tables, stockage des fichiers) pour que prof et élèves partagent les mêmes données.
+
+## Déploiement
+Vercel (framework Vite). vercel.json gère les routes.

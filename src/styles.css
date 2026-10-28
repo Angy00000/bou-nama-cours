@@ -6,10 +6,14 @@
   --body:"Source Sans 3",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --r:12px;
 }
-@media (prefers-color-scheme:dark){:root{
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0f1816; --paper:#152320; --ink:#e4ece9; --muted:#9bb0aa; --line:#293b37; --soft:#1c2d29;
   --board:#1f5148; --board2:#173f38; --chalk:#eef4f1; --accent:#e6a443; --accent-ink:#241602;
   --ok:#5fbf84; --okbg:#173326; --warn:#e6b25e; --warnbg:#33280f; --err:#ea7d69; --errbg:#3a1d17; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1816; --paper:#152320; --ink:#e4ece9; --muted:#9bb0aa; --line:#293b37; --soft:#1c2d29;
+  --board:#1f5148; --board2:#173f38; --chalk:#eef4f1; --accent:#e6a443; --accent-ink:#241602;
+  --ok:#5fbf84; --okbg:#173326; --warn:#e6b25e; --warnbg:#33280f; --err:#ea7d69; --errbg:#3a1d17; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
