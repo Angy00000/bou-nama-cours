@@ -70,19 +70,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="sect pad">
-        <div className="feats">
-          <img className="feats-img" src="/img/livres.webp" alt="Livres et ordinateur portable : les cours en ligne" loading="lazy" width="900" height="900" />
-          <div className="feats-list">
-          <h2>Tout pour réussir, au même endroit</h2>
-          <div className="feat"><b>Cours en ligne par classe</b><p className="muted">Chaque élève retrouve les cours, fiches, exercices et sujets d’examen de sa classe, chapitre par chapitre.</p></div>
-          <div className="feat"><b>Devoirs et corrections</b><p className="muted">Les devoirs se rendent en ligne, avec une note et un commentaire du professeur.</p></div>
-          <div className="feat"><b>Suivi pour les parents</b><p className="muted">Les parents voient les notes, les présences et les paiements de leur enfant.</p></div>
-          <div className="feat"><b>École, domicile ou en ligne</b><p className="muted">Cours en groupe à l’école, cours particuliers à domicile ou en visio, secteur {site.zone}.</p></div>
-          </div>
-        </div>
-      </section>
-
       <section className="prof-band pad">
         <div className="prof-in">
           <div className="prof-photo">
@@ -102,6 +89,19 @@ export default function Home() {
               <a className="btn primary" href={wa} target="_blank" rel="noreferrer">Parler au professeur</a>
               <Link className="btn ghost prof-ghost" to="/inscription">Inscrire mon enfant</Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="sect pad">
+        <div className="feats">
+          <img className="feats-img" src="/img/livres.webp" alt="Livres et ordinateur portable : les cours en ligne" loading="lazy" width="900" height="900" />
+          <div className="feats-list">
+          <h2>Tout pour réussir, au même endroit</h2>
+          <div className="feat"><b>Cours en ligne par classe</b><p className="muted">Chaque élève retrouve les cours, fiches, exercices et sujets d’examen de sa classe, chapitre par chapitre.</p></div>
+          <div className="feat"><b>Devoirs et corrections</b><p className="muted">Les devoirs se rendent en ligne, avec une note et un commentaire du professeur.</p></div>
+          <div className="feat"><b>Suivi pour les parents</b><p className="muted">Les parents voient les notes, les présences et les paiements de leur enfant.</p></div>
+          <div className="feat"><b>École, domicile ou en ligne</b><p className="muted">Cours en groupe à l’école, cours particuliers à domicile ou en visio, secteur {site.zone}.</p></div>
           </div>
         </div>
       </section>
