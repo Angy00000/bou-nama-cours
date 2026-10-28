@@ -47,7 +47,6 @@ export default function Home() {
     <>
       <PubHead />
       <section className="hero pad">
-        <div className="formula" aria-hidden="true">{site.nom}</div>
         <div className="in">
           <span className="small" style={{ letterSpacing: '.1em', textTransform: 'uppercase', opacity: .75 }}>{site.matieres}</span>
           <h1>{site.slogan}</h1>
@@ -60,11 +59,15 @@ export default function Home() {
       </section>
 
       <section className="sect pad">
-        <div className="grid">
+        <div className="feats">
+          <img className="feats-img" src="/img/livres.webp" alt="Livres et ordinateur portable : les cours en ligne" loading="lazy" width="900" height="900" />
+          <div className="feats-list">
+          <h2>Tout pour réussir, au même endroit</h2>
           <div className="feat"><b>Cours en ligne par classe</b><p className="muted">Chaque élève retrouve les cours, fiches, exercices et sujets d’examen de sa classe, chapitre par chapitre.</p></div>
           <div className="feat"><b>Devoirs et corrections</b><p className="muted">Les devoirs se rendent en ligne, avec une note et un commentaire du professeur.</p></div>
           <div className="feat"><b>Suivi pour les parents</b><p className="muted">Les parents voient les notes, les présences et les paiements de leur enfant.</p></div>
-          <div className="feat"><b>École, domicile ou en ligne</b><p className="muted">Cours en groupe à l’école, cours particuliers à domicile ou en visio ({site.zone}).</p></div>
+          <div className="feat"><b>École, domicile ou en ligne</b><p className="muted">Cours en groupe à l’école, cours particuliers à domicile ou en visio, secteur {site.zone}.</p></div>
+          </div>
         </div>
       </section>
 
@@ -105,7 +108,7 @@ export default function Home() {
       )}
 
       <section className="sect pad" style={{ paddingTop: 0 }}>
-        <div className="card stack" style={{ background: 'var(--board)', color: 'var(--chalk)', borderColor: 'var(--board)' }}>
+        <div className="card stack contact-card">
           <h2>Contact</h2>
           <p>{site.prof} · <b>{site.tel}</b> (appel ou WhatsApp){nbEleves ? ` · ${nbEleves} élèves suivent les cours` : ''}</p>
           <div className="row">

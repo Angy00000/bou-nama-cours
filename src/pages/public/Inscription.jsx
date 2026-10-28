@@ -27,6 +27,7 @@ export default function Inscription() {
   return (
     <>
       <PubHead />
+      <div className="auth-bg">
       <div className="authbox pad">
         {ok ? (
           <div className="card stack">
@@ -65,6 +66,7 @@ export default function Inscription() {
             <p className="small muted">Déjà inscrit ? <Link to="/connexion">Se connecter</Link></p>
           </form>
         )}
+      </div>
       </div>
       <PubFoot />
     </>

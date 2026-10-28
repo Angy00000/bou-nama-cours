@@ -25,6 +25,7 @@ export default function Connexion() {
   return (
     <>
       <PubHead />
+      <div className="auth-bg">
       <div className="authbox pad stack">
         <form className="card stack" onSubmit={submit}>
           <h1>Connexion</h1>
@@ -35,6 +36,7 @@ export default function Connexion() {
           <p className="small muted">Pas encore inscrit ? <Link to="/inscription">Faire une demande</Link></p>
           <p className="small muted">Parents : connectez-vous avec votre numéro. Mot de passe de départ : les 4 derniers chiffres de votre numéro.</p>
         </form>
+      </div>
       </div>
       <PubFoot />
     </>
