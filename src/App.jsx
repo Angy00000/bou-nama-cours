@@ -15,6 +15,7 @@ import Questions from './pages/prof/Questions.jsx';
 import Planning from './pages/prof/Planning.jsx';
 import Paiements from './pages/prof/Paiements.jsx';
 import Site from './pages/prof/Site.jsx';
+import CompteProf from './pages/prof/Compte.jsx';
 import Messages from './pages/Messages.jsx';
 import CoursDetail from './pages/CoursDetail.jsx';
 import EleveAccueil from './pages/eleve/Accueil.jsx';
@@ -104,6 +105,7 @@ function ProfArea() {
     { to: '/prof/planning', label: 'Planning' },
     { to: '/prof/paiements', label: 'Paiements' },
     { to: '/prof/site', label: 'Mon site' },
+    { to: '/prof/compte', label: 'Mon compte' },
   ];
   return (
     <Shell items={items}>
@@ -121,6 +123,7 @@ function ProfArea() {
         <Route path="planning" element={<Planning />} />
         <Route path="paiements" element={<Paiements />} />
         <Route path="site" element={<Site />} />
+        <Route path="compte" element={<CompteProf />} />
         <Route path="*" element={<Navigate to="/prof" replace />} />
       </Routes>
     </Shell>
