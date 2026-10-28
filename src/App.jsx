@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { BrowserRouter, MemoryRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useMe, useData, useStatus, logout, clearError, espaceDe } from './data/store.js';
-import Home from './pages/public/Home.jsx';
+import Home, { Logo } from './pages/public/Home.jsx';
 import Inscription from './pages/public/Inscription.jsx';
 import Connexion from './pages/public/Connexion.jsx';
 import ProfDash from './pages/prof/Dashboard.jsx';
@@ -52,7 +52,7 @@ function Shell({ items, children }) {
   const close = () => setOpen(false);
   const side = (
     <aside className={'side' + (open ? ' open' : '')}>
-      <div className="brand">{site.nom}<small>{me.role === 'prof' ? 'Espace professeur' : me.role === 'parent' ? 'Espace parent' : 'Espace élève'}</small></div>
+      <div className="brand"><Logo nom={site.nom} /><small>{me.role === 'prof' ? 'Espace professeur' : me.role === 'parent' ? 'Espace parent' : 'Espace élève'}</small></div>
       <nav className="nav stack" style={{ gap: 2 }} onClick={close}>
         {items.map((i) => (
           <NavLink key={i.to} to={i.to} end={i.end}>

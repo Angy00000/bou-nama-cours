@@ -140,6 +140,14 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .auth-bg .authbox{margin-top:12px}
 .hero .in{max-width:1080px;margin:0 auto;display:grid;gap:18px;position:relative}
 .hero h1{font-size:clamp(32px,7vw,58px);max-width:15ch}
+.hero h1.brand-hero{font-size:clamp(58px,15vw,128px);font-weight:800;letter-spacing:-.02em;line-height:.95;max-width:none;white-space:nowrap}
+.brand-hero span{color:var(--accent)}
+.hero-slogan{font-family:var(--display);font-weight:600;font-size:clamp(20px,3.4vw,30px)!important;line-height:1.25;max-width:26ch!important;opacity:1!important}
+.logo-mark{display:inline-flex;align-items:center;gap:10px;white-space:nowrap;font-family:var(--display);font-weight:800;letter-spacing:.02em}
+.logo-mark img{width:34px;height:34px;border-radius:8px;box-shadow:0 0 0 1px rgba(255,255,255,.18)}
+.logo-mark b{color:var(--accent)}
+.pub-head a.logo{font-size:22px}
+.brand .logo-mark{font-size:22px}
 .hero p{max-width:56ch;opacity:.9;font-size:18px}
 .hero .formula{position:absolute;right:-10px;top:10px;font-family:var(--display);font-size:clamp(60px,14vw,160px);opacity:.07;white-space:nowrap;pointer-events:none}
 .sect{max-width:1080px;margin:0 auto;padding-block:40px;display:grid;gap:20px}
@@ -174,3 +182,4 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 }
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media(max-width:420px){.pub-head a.logo{font-size:19px}.logo-mark img{width:28px;height:28px}.pub-head .btn.sm{padding:6px 9px}}

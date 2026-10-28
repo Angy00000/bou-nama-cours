@@ -8,13 +8,24 @@ export const waLien = (tel, texte = '') => {
   return `https://wa.me/${n}${texte ? '?text=' + encodeURIComponent(texte) : ''}`;
 };
 
+// Nom de la plateforme mis en avant : 1er mot en orange (ex. IBD RENF)
+export function Logo({ nom = '' }) {
+  const [a, ...r] = String(nom).split(' ');
+  return (
+    <span className="logo-mark">
+      <img src="/icon-192.png" alt="" width="34" height="34" />
+      <span><b>{a}</b>{r.length ? ' ' + r.join(' ') : ''}</span>
+    </span>
+  );
+}
+
 export function PubHead() {
   const site = useData((s) => s.site);
   const me = useMe();
   return (
     <header className="pub-head">
       <div className="in pad">
-        <Link to="/" className="logo">{site.nom}</Link>
+        <Link to="/" className="logo"><Logo nom={site.nom} /></Link>
         <div className="row">
           {me ? (
             <Link className="btn primary sm" to={espaceDe(me)}>Mon espace</Link>
@@ -48,8 +59,9 @@ export default function Home() {
       <PubHead />
       <section className="hero pad">
         <div className="in">
-          <span className="small" style={{ letterSpacing: '.1em', textTransform: 'uppercase', opacity: .75 }}>{site.matieres}</span>
-          <h1>{site.slogan}</h1>
+          <h1 className="brand-hero">{(() => { const [a, ...r] = String(site.nom || '').split(' '); return <><span>{a}</span>{r.length ? ' ' + r.join(' ') : ''}</>; })()}</h1>
+          <p className="hero-slogan">{site.slogan}</p>
+          <span className="small" style={{ letterSpacing: '.1em', textTransform: 'uppercase', opacity: .8 }}>{site.matieres}</span>
           <p>{site.apropos}</p>
           <div className="row">
             <Link className="btn primary" to="/inscription">Inscrire un élève</Link>
