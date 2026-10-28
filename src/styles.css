@@ -183,3 +183,17 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media(max-width:420px){.pub-head a.logo{font-size:19px}.logo-mark img{width:28px;height:28px}.pub-head .btn.sm{padding:6px 9px}}
+
+/* Section « Votre professeur » */
+.prof-band{background:linear-gradient(135deg,var(--board) 0%,#0d2c63 60%,#123a80 100%);color:var(--chalk);padding-block:clamp(40px,7vw,80px)}
+.prof-in{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:clamp(24px,5vw,56px);align-items:center}
+.prof-photo{position:relative}
+.prof-photo::before{content:"";position:absolute;inset:18px -14px -14px 18px;border:2px solid #4fa8ff;border-radius:22px;opacity:.6}
+.prof-photo img{position:relative;width:100%;height:auto;border-radius:20px;box-shadow:0 22px 50px rgba(0,0,0,.4);aspect-ratio:800/999;object-fit:cover}
+.eyebrow{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#8fd0ff;font-weight:600}
+.prof-nom{font-size:clamp(32px,5vw,48px);font-weight:800}
+.prof-matieres{color:#9be3ff;font-weight:600}
+.prof-txt p{max-width:58ch;opacity:.92}
+.prof-points{margin:0;padding-left:20px;display:grid;gap:6px;opacity:.95}
+.prof-ghost{color:var(--chalk);border-color:rgba(255,255,255,.35)}
+@media(max-width:720px){.prof-in{grid-template-columns:1fr}.prof-photo{max-width:340px;margin:0 auto 8px}}

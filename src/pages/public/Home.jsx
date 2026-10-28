@@ -83,7 +83,30 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="sect pad" style={{ paddingTop: 0 }}>
+      <section className="prof-band pad">
+        <div className="prof-in">
+          <div className="prof-photo">
+            <img src="/img/prof.webp" alt={`${site.prof}, professeur`} loading="lazy" width="800" height="999" />
+          </div>
+          <div className="stack prof-txt">
+            <span className="eyebrow">Votre professeur</span>
+            <h2 className="prof-nom">{site.prof}</h2>
+            <p className="prof-matieres">{site.matieres}</p>
+            <p>{site.apropos}</p>
+            <ul className="prof-points">
+              <li>Du primaire au Bac, avec préparation au CFEE, au BFEM et au Bac</li>
+              <li>Suivi de chaque élève : devoirs corrigés, présences, progrès</li>
+              <li>Parents informés des notes et des paiements</li>
+            </ul>
+            <div className="row">
+              <a className="btn primary" href={wa} target="_blank" rel="noreferrer">Parler au professeur</a>
+              <Link className="btn ghost prof-ghost" to="/inscription">Inscrire mon enfant</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="sect pad">
         <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))' }}>
           <div className="card stack">
             <h2>Tarifs</h2>
