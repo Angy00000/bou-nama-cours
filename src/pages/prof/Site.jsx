@@ -5,9 +5,10 @@ import { PageHead, Field } from '../../components/ui.jsx';
 
 export default function Site() {
   const site = useData((s) => s.site);
-  const [f, setF] = useState(site);
+  const [f, setF] = useState({ tarifs: [], temoignages: [], horaires: '', resultats: '', whatsapp: '', ...site });
   const [ok, setOk] = useState(false);
   const up = (k) => (e) => { setOk(false); setF({ ...f, [k]: e.target.value }); };
+  const upTem = (i, k) => (e) => { setOk(false); setF({ ...f, temoignages: f.temoignages.map((t, j) => (j === i ? { ...t, [k]: e.target.value } : t)) }); };
   const upTarif = (i, k) => (e) => { setOk(false); setF({ ...f, tarifs: f.tarifs.map((t, j) => (j === i ? { ...t, [k]: e.target.value } : t)) }); };
   return (
     <>
@@ -26,9 +27,26 @@ export default function Site() {
           <Field label="Niveaux"><input className="input" value={f.niveaux} onChange={up('niveaux')} /></Field>
         </div>
         <div className="form2">
-          <Field label="Téléphone / WhatsApp"><input className="input" value={f.tel} onChange={up('tel')} /></Field>
-          <Field label="Zone"><input className="input" value={f.zone} onChange={up('zone')} /></Field>
+          <Field label="Téléphone affiché"><input className="input" value={f.tel} onChange={up('tel')} /></Field>
+          <Field label="Numéro WhatsApp" hint="Vide : le téléphone affiché."><input className="input" value={f.whatsapp} onChange={up('whatsapp')} /></Field>
         </div>
+        <Field label="Zone"><input className="input" value={f.zone} onChange={up('zone')} /></Field>
+        <Field label="Horaires et disponibilités" hint="Une ligne par créneau, ex. « Lundi à vendredi : 17h – 20h »."><textarea className="input" value={f.horaires} onChange={up('horaires')} /></Field>
+        <Field label="Résultats" hint="Ex. taux de réussite au BFEM ou au Bac."><textarea className="input" value={f.resultats} onChange={up('resultats')} /></Field>
+        <Field label="Témoignages">
+          <div className="stack" style={{ gap: 8 }}>
+            {f.temoignages.map((t, i) => (
+              <div className="stack" key={i} style={{ gap: 6, paddingBottom: 8, borderBottom: '1px solid var(--line)' }}>
+                <div className="row" style={{ flexWrap: 'nowrap' }}>
+                  <input className="input" placeholder="Nom (ex. Maman de Fatou, 3e)" value={t.nom} onChange={upTem(i, 'nom')} />
+                  <button className="btn sm danger" onClick={() => setF({ ...f, temoignages: f.temoignages.filter((_, j) => j !== i) })}>×</button>
+                </div>
+                <textarea className="input" style={{ minHeight: 60 }} placeholder="Ce qu’il ou elle dit" value={t.texte} onChange={upTem(i, 'texte')} />
+              </div>
+            ))}
+            <button className="btn sm ghost" style={{ justifySelf: 'start' }} onClick={() => setF({ ...f, temoignages: [...f.temoignages, { nom: '', texte: '' }] })}>Ajouter un témoignage</button>
+          </div>
+        </Field>
         <Field label="Tarifs">
           <div className="stack" style={{ gap: 8 }}>
             {f.tarifs.map((t, i) => (
@@ -42,7 +60,7 @@ export default function Site() {
           </div>
         </Field>
         <div className="row">
-          <button className="btn primary" onClick={() => { updateSite(f); setOk(true); }}>Enregistrer</button>
+          <button className="btn primary" onClick={async () => { if (await updateSite(f)) setOk(true); }}>Enregistrer</button>
           {ok && <span className="badge ok">Site mis à jour</span>}
         </div>
       </div>

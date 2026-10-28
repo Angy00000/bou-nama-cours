@@ -6,7 +6,7 @@ const TOKEN = 'bounama-token';
 const EMPTY = {
   site: { nom: '', slogan: '', prof: '', apropos: '', matieres: '', niveaux: '', tel: '', zone: '', tarifs: [] },
   nbEleves: 0, me: null, users: [], classes: [], cours: [], questions: [], annonces: [],
-  messages: [], devoirs: [], seances: [], paiements: [],
+  messages: [], devoirs: [], seances: [], paiements: [], presences: [], discussions: [], parents: [],
 };
 let state = EMPTY;
 let status = { publicReady: false, authReady: false, error: '' };
@@ -24,6 +24,7 @@ export function useStatus() {
   return useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => status);
 }
 export const useMe = () => useData((s) => s.me);
+export const espaceDe = (u) => (u?.role === 'prof' ? '/prof' : u?.role === 'parent' ? '/parent' : '/eleve');
 const setStatus = (p) => { status = { ...status, ...p }; emit(); };
 export const clearError = () => setStatus({ error: '' });
 
@@ -67,6 +68,7 @@ export async function login(tel, password) {
 }
 export function logout() {
   setToken(null);
+  try { navigator.serviceWorker?.controller?.postMessage('vider-cache'); } catch {}
   state = { ...EMPTY, site: state.site, nbEleves: state.nbEleves };
   emit();
 }
@@ -109,6 +111,9 @@ export const supprimerSeance = (id) => act('supprimerSeance', { id });
 export const ajouterPaiement = (d) => act('ajouterPaiement', d);
 export const supprimerPaiement = (id) => act('supprimerPaiement', { id });
 export const changerMotDePasse = (password) => act('changerMotDePasse', { password });
+export const enregistrerPresences = (classeId, date, lignes) => act('enregistrerPresences', { classeId, date, lignes });
+export const posterDiscussion = (classeId, texte) => act('posterDiscussion', { classeId, texte });
+export const reinitParent = (id) => act('reinitParent', { id });
 
 /* ---------- Fichiers ---------- */
 export const MAX_FICHIER = 4 * 1024 * 1024;

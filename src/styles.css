@@ -150,4 +150,16 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 .bub small{display:block;font-size:11px;opacity:.7;margin-top:3px}
 @media(max-width:700px){.chat{grid-template-columns:1fr}}
 
+/* Bouton WhatsApp flottant */
+.wa-float{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));background:#1f8f4e;color:#fff;font-weight:700;text-decoration:none;border-radius:99px;padding:12px 18px;box-shadow:0 6px 18px rgba(0,0,0,.2);z-index:30}
+
+/* Impression des reçus */
+@media print{
+  .side,.topbar,.demo,.toast,.no-print,.wa-float{display:none!important}
+  .shell{display:block}
+  .main{padding:0}
+  body{background:#fff;color:#000}
+  .recu{border:1px solid #999;max-width:none!important}
+}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}

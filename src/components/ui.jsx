@@ -71,7 +71,7 @@ export function PaiementBadge({ etat }) {
 }
 
 // Affiche une pièce jointe stockée (ouvre dans un nouvel onglet)
-export function FichierLien({ fichierId, fichierNom }) {
+export function FichierLien({ fichierId, fichierNom, apercu = false }) {
   const [url, setUrl] = useState(null);
   useEffect(() => {
     let u;
@@ -79,6 +79,16 @@ export function FichierLien({ fichierId, fichierNom }) {
     return () => u && URL.revokeObjectURL(u);
   }, [fichierId]);
   if (!fichierId) return null;
+  const ext = (fichierNom || '').split('.').pop().toLowerCase();
+  if (apercu && url && ['mp3', 'm4a', 'aac', 'ogg', 'wav', 'opus', 'amr'].includes(ext)) {
+    return <div className="stack" style={{ gap: 6 }}><audio controls src={url} style={{ width: '100%' }} /><a className="small" href={url} download={fichierNom}>Télécharger {fichierNom}</a></div>;
+  }
+  if (apercu && url && ['jpg', 'jpeg', 'png', 'webp', 'gif', 'heic'].includes(ext)) {
+    return <div className="stack" style={{ gap: 6 }}><a href={url} target="_blank" rel="noreferrer"><img src={url} alt={fichierNom} style={{ borderRadius: 10, border: '1px solid var(--line)', maxHeight: '70vh', objectFit: 'contain' }} /></a><a className="small" href={url} download={fichierNom}>Télécharger {fichierNom}</a></div>;
+  }
+  if (apercu && url && ['mp4', 'webm', 'mov'].includes(ext)) {
+    return <video controls src={url} style={{ width: '100%', borderRadius: 10 }} />;
+  }
   return url ? (
     <a className="btn sm ghost" href={url} target="_blank" rel="noreferrer" download={fichierNom}>📎 {fichierNom}</a>
   ) : (

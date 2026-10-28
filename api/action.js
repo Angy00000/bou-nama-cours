@@ -5,6 +5,21 @@ const t = (v, n = 5000) => (v === undefined || v === null ? null : String(v).tri
 const int = (v) => (Number.isFinite(Number(v)) ? Math.round(Number(v)) : 0);
 const arr = (v) => (Array.isArray(v) ? v.map(String).slice(0, 50) : []);
 
+// Crée (ou complète) le compte parent lié au numéro du parent.
+// Mot de passe de départ : les 4 derniers chiffres du numéro du parent.
+async function lierParent(parentTel, eleveId) {
+  const tel = normTel(parentTel);
+  if (tel.length < 7) return;
+  const [u] = await q('select id, role from users where tel = $1', [tel]);
+  if (u && u.role !== 'parent') return; // numéro déjà utilisé par un élève ou le prof
+  if (u) {
+    await q('update users set enfant_ids = array_append(enfant_ids, $2) where id = $1 and not ($2 = any(enfant_ids))', [u.id, eleveId]);
+  } else {
+    await q(`insert into users (id, role, statut, nom, tel, password_hash, enfant_ids) values ($1,'parent','actif',$2,$3,$4,$5)`,
+      [uid('u'), 'Parent', tel, await bcrypt.hash(tel.slice(-4), 10), [eleveId]]);
+  }
+}
+
 // Actions réservées au professeur
 const PROF = {
   async updateSite(p) { await q("update site set data = $1::jsonb where id = 1", [JSON.stringify(p)]); },
@@ -28,6 +43,7 @@ const PROF = {
     await q(`update users set nom=$2, tel=$3, statut=$4, niveau=$5, ecole=$6, parent_tel=$7, adresse=$8, tarif=$9, classe_ids=$10 where id=$1`,
       [id, m.nom, m.tel, m.statut, m.niveau, m.ecole, m.parent_tel, m.adresse, m.tarif, m.classe_ids]);
     if (patch.password) await q('update users set password_hash = $2 where id = $1', [id, await bcrypt.hash(String(patch.password), 10)]);
+    if (u.role === 'eleve' && m.statut === 'actif' && m.parent_tel) await lierParent(m.parent_tel, id);
   },
 
   async ajouterEleve(d) {
@@ -36,11 +52,29 @@ const PROF = {
     const [x] = await q('select 1 from users where tel = $1', [tel]);
     if (x) throw fail(409, 'Ce numéro est déjà inscrit.');
     const pw = String(d.password || tel.slice(-4));
+    const id = uid('u');
     await q(`insert into users (id, role, statut, nom, tel, password_hash, niveau, ecole, parent_tel, adresse, tarif, classe_ids)
              values ($1,'eleve','actif',$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-      [uid('u'), t(d.nom, 200), tel, await bcrypt.hash(pw, 10), t(d.niveau, 200), t(d.ecole, 200), normTel(d.parentTel) || null, t(d.adresse, 300), int(d.tarif), arr(d.classeIds)]);
+      [id, t(d.nom, 200), tel, await bcrypt.hash(pw, 10), t(d.niveau, 200), t(d.ecole, 200), normTel(d.parentTel) || null, t(d.adresse, 300), int(d.tarif), arr(d.classeIds)]);
+    if (d.parentTel) await lierParent(d.parentTel, id);
   },
-  async supprimerUser({ id }) { await q("delete from users where id = $1 and role = 'eleve'", [id]); },
+  async supprimerUser({ id }) {
+    await q("delete from users where id = $1 and role = 'eleve'", [id]);
+    await q("update users set enfant_ids = array_remove(enfant_ids, $1) where role = 'parent'", [id]);
+  },
+  async reinitParent({ id }) {
+    const [p] = await q("select tel from users where id = $1 and role = 'parent'", [id]);
+    if (!p) throw fail(404, 'Compte parent introuvable.');
+    await q('update users set password_hash = $2 where id = $1', [id, await bcrypt.hash(p.tel.slice(-4), 10)]);
+  },
+  async enregistrerPresences({ classeId, date, lignes }) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date))) throw fail(400, 'Date invalide.');
+    for (const l of (Array.isArray(lignes) ? lignes : []).slice(0, 200)) {
+      if (!['present', 'absent', 'retard'].includes(l.statut)) continue;
+      await q(`insert into presences (classe_id, eleve_id, date, statut) values ($1,$2,$3,$4)
+               on conflict (classe_id, eleve_id, date) do update set statut = excluded.statut`, [classeId, l.eleveId, date, l.statut]);
+    }
+  },
 
   async ajouterClasse(d) { await q('insert into classes values ($1,$2,$3,$4,$5,$6)', [uid('c'), t(d.nom, 200), t(d.lieu, 50), t(d.niveau, 100), t(d.matiere, 100), t(d.couleur, 20)]); },
   async updateClasse({ id, patch: d }) { await q('update classes set nom=$2, lieu=$3, niveau=$4, matiere=$5, couleur=$6 where id=$1', [id, t(d.nom, 200), t(d.lieu, 50), t(d.niveau, 100), t(d.matiere, 100), t(d.couleur, 20)]); },
@@ -68,7 +102,11 @@ const PROF = {
     await q('update rendus set note = $3, commentaire = $4 where devoir_id = $1 and eleve_id = $2', [devoirId, eleveId, t(patch.note, 20), t(patch.commentaire, 2000)]);
   },
 
-  async ajouterSeance(d) { await q('insert into seances values ($1,$2,$3,$4,$5,$6)', [uid('s'), d.classeId, int(d.jour) % 7, t(d.heure, 5), int(d.duree), t(d.lieu, 200)]); },
+  async ajouterSeance(d) {
+    const lien = t(d.lien, 500);
+    if (lien && !/^https:\/\//.test(lien)) throw fail(400, 'Le lien visio doit commencer par https://');
+    await q('insert into seances (id, classe_id, jour, heure, duree, lieu, lien) values ($1,$2,$3,$4,$5,$6,$7)', [uid('s'), d.classeId, int(d.jour) % 7, t(d.heure, 5), int(d.duree), t(d.lieu, 200), lien]);
+  },
   async supprimerSeance({ id }) { await q('delete from seances where id = $1', [id]); },
 
   async ajouterPaiement(d) {
@@ -95,6 +133,12 @@ const COMMUN = {
     if (!to) throw fail(404, 'Destinataire introuvable.');
     if (me.role !== 'prof' && to.role !== 'prof') throw fail(403, 'Vous pouvez écrire uniquement au professeur.');
     await q('insert into messages (id, from_id, to_id, texte) values ($1,$2,$3,$4)', [uid('m'), me.id, toId, t(texte, 3000)]);
+  },
+  async posterDiscussion({ classeId, texte }, me) {
+    if (me.role === 'parent') throw fail(403, 'Réservé aux élèves et au professeur.');
+    if (me.role !== 'prof' && !(me.classe_ids || []).includes(classeId)) throw fail(403, 'Vous ne faites pas partie de cette classe.');
+    if (!t(texte)) return;
+    await q('insert into discussions (id, classe_id, auteur_id, texte) values ($1,$2,$3,$4)', [uid('g'), classeId, me.id, t(texte, 2000)]);
   },
   async marquerLus({ autreId }, me) { await q('update messages set lu = true where to_id = $1 and from_id = $2', [me.id, autreId]); },
   async rendreDevoir(d, me) {

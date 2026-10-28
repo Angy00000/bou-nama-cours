@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useData, updateUser, ajouterEleve, supprimerUser, statutPaiement, normTel } from '../../data/store.js';
+import { useData, updateUser, ajouterEleve, supprimerUser, statutPaiement, normTel, reinitParent } from '../../data/store.js';
 import { PageHead, Empty, Modal, Field, PaiementBadge, ClasseTag, Confirm } from '../../components/ui.jsx';
 
 export default function Eleves() {
@@ -36,7 +36,7 @@ export default function Eleves() {
                   <td><b>{u.nom}</b><div className="small muted">{u.niveau}{u.ecole ? ' · ' + u.ecole : ''}</div></td>
                   <td><div className="stack" style={{ gap: 4 }}>{(u.classeIds || []).map((id) => <ClasseTag key={id} classe={s.classes.find((c) => c.id === id)} />)}</div></td>
                   <td>{u.tel}</td>
-                  <td>{u.parentTel || '—'}</td>
+                  <td>{u.parentTel || '—'}{s.parents.some((p) => (p.enfantIds || []).includes(u.id)) && <div><span className="badge ok">Accès parent</span></div>}</td>
                   <td><PaiementBadge etat={statutPaiement(s, u).etat} /></td>
                   <td className="row" style={{ flexWrap: 'nowrap' }}>
                     <button className="btn sm ghost" onClick={() => setEdit(u)}>Modifier</button>
@@ -48,25 +48,24 @@ export default function Eleves() {
           </table>
         </div>
       ) : <Empty>Aucun élève pour ce filtre.</Empty>}
-      {edit && <EleveForm u={edit} classes={s.classes} onClose={() => setEdit(null)} />}
+      {edit && <EleveForm u={edit} classes={s.classes} parent={s.parents.find((p) => (p.enfantIds || []).includes(edit.id))} onClose={() => setEdit(null)} />}
     </>
   );
 }
 
-function EleveForm({ u, classes, onClose }) {
+function EleveForm({ u, classes, parent, onClose }) {
+  const [okParent, setOkParent] = useState(false);
   const isNew = !u.id;
   const [f, setF] = useState({ nom: '', tel: '', parentTel: '', niveau: '', ecole: '', adresse: '', tarif: '', password: '', classeIds: [], ...u });
   const [err, setErr] = useState('');
   const up = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const toggle = (id) => setF({ ...f, classeIds: f.classeIds.includes(id) ? f.classeIds.filter((x) => x !== id) : [...f.classeIds, id] });
-  const save = () => {
+  const save = async () => {
     if (!f.nom.trim() || !f.tel.trim()) return setErr('Le nom et le téléphone sont obligatoires.');
     const data = { ...f, tel: normTel(f.tel), tarif: Number(f.tarif) || 0 };
-    if (isNew) {
-      if (!data.password) data.password = data.tel.slice(-4);
-      ajouterEleve(data);
-    } else updateUser(u.id, data);
-    onClose();
+    if (isNew && !data.password) data.password = data.tel.slice(-4);
+    const ok = isNew ? await ajouterEleve(data) : await updateUser(u.id, data);
+    if (ok) onClose();
   };
   return (
     <Modal title={isNew ? 'Nouvel élève' : u.nom} onClose={onClose}>
@@ -90,6 +89,18 @@ function EleveForm({ u, classes, onClose }) {
         <Field label="Classes sur la plateforme">
           <div className="chk">{classes.map((c) => <label key={c.id}><input type="checkbox" checked={f.classeIds.includes(c.id)} onChange={() => toggle(c.id)} />{c.nom}</label>)}</div>
         </Field>
+        <div className="card flat stack" style={{ gap: 6 }}>
+          <b>Accès parent</b>
+          {parent ? (
+            <>
+              <span className="small">Le parent se connecte avec le <b>{parent.tel}</b>. Mot de passe de départ : les 4 derniers chiffres de ce numéro.</span>
+              <div className="row">
+                <button className="btn sm ghost" type="button" onClick={async () => { if (await reinitParent(parent.id)) setOkParent(true); }}>Remettre le mot de passe de départ</button>
+                {okParent && <span className="badge ok">Fait</span>}
+              </div>
+            </>
+          ) : <span className="small muted">Créé automatiquement à l’enregistrement si le téléphone du parent est renseigné.</span>}
+        </div>
         {err && <p className="err">{err}</p>}
         <div className="row between">
           <button className="btn primary" onClick={save}>Enregistrer</button>

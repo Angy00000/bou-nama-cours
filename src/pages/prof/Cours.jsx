@@ -67,8 +67,8 @@ function CoursForm({ classes, defaut, chapitres, onClose }) {
             ))}
           </div>
         </Field>
-        {f.type === 'fichier' && <Field label="Fichier" hint="PDF, Word, image, audio. 4 Mo maximum."><input className="input" type="file" onChange={(e) => setFile(e.target.files[0] || null)} /></Field>}
-        {f.type === 'lien' && <Field label="Adresse du lien" hint="YouTube (non répertorié), Google Drive…"><input className="input" value={f.url} onChange={up('url')} placeholder="https://" /></Field>}
+        {f.type === 'fichier' && <Field label="Fichier" hint="PDF, Word, photo du cahier ou du tableau, audio (message vocal). 4 Mo maximum."><input className="input" type="file" onChange={(e) => setFile(e.target.files[0] || null)} /></Field>}
+        {f.type === 'lien' && <Field label="Adresse du lien" hint="Pour les vidéos : mettez-les sur YouTube en « non répertorié » et collez le lien ici."><input className="input" value={f.url} onChange={up('url')} placeholder="https://" /></Field>}
         {f.type === 'texte' && <Field label="Contenu"><textarea className="input" style={{ minHeight: 180 }} value={f.contenu} onChange={up('contenu')} /></Field>}
         {err && <p className="err">{err}</p>}
         <button className="btn primary" disabled={busy} onClick={save}>{busy ? 'Publication…' : 'Publier pour la classe'}</button>

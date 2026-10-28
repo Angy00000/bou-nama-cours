@@ -32,7 +32,8 @@ export default function Accueil() {
           <h2>Mes séances</h2>
           {seances.length ? <div className="list">{seances.map((x) => (
             <div className="item" key={x.id}>
-              <div className="grow"><b>{JOURS[x.jour]} {x.heure}</b><div className="small muted">{x.lieu}</div></div>
+              <div className="grow"><b>{JOURS[x.jour]} {x.heure}</b><div className="small muted">{x.lieu}</div>
+                {x.lien && <a className="btn sm dark" style={{ marginTop: 6 }} href={x.lien} target="_blank" rel="noreferrer">Rejoindre en visio</a>}</div>
               <ClasseTag classe={cl(x.classeId)} />
             </div>
           ))}</div> : <p className="muted">Pas encore de séance planifiée.</p>}

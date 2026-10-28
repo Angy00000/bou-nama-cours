@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useData, ajouterPaiement, supprimerPaiement, statutPaiement, moisCourant } from '../../data/store.js';
 import { PageHead, Modal, Field, PaiementBadge, fcfa, fdate, fmois, Confirm } from '../../components/ui.jsx';
 
@@ -60,6 +61,7 @@ export default function Paiements() {
               <div className="item" key={p.id}>
                 <div className="grow"><b>{nom(p.eleveId)}</b><div className="small muted">{p.moyen} · {fdate(p.date)}</div></div>
                 <b style={{ fontVariantNumeric: 'tabular-nums' }}>{fcfa(p.montant)}</b>
+                <Link className="btn sm ghost" to={`/prof/recu/${p.id}`}>Reçu</Link>
                 <Confirm label="×" onYes={() => supprimerPaiement(p.id)} />
               </div>
             ))}
@@ -83,7 +85,7 @@ function PaiementForm({ init, eleves, onClose }) {
           <Field label="Moyen"><select className="input" value={f.moyen} onChange={up('moyen')}><option>Wave</option><option>Orange Money</option><option>Espèces</option><option>Virement</option></select></Field>
         </div>
         <Field label="Mois concerné"><select className="input" value={f.mois} onChange={up('mois')}>{moisListe().map((m) => <option key={m} value={m}>{fmois(m)}</option>)}</select></Field>
-        <button className="btn primary" disabled={!Number(f.montant)} onClick={() => { ajouterPaiement({ ...f, montant: Number(f.montant) }); onClose(); }}>Enregistrer</button>
+        <button className="btn primary" disabled={!Number(f.montant)} onClick={async () => { if (await ajouterPaiement({ ...f, montant: Number(f.montant) })) onClose(); }}>Enregistrer</button>
       </div>
     </Modal>
   );

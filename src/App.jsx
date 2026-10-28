@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BrowserRouter, MemoryRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useMe, useData, useStatus, logout, clearError } from './data/store.js';
+import { useMe, useData, useStatus, logout, clearError, espaceDe } from './data/store.js';
 import Home from './pages/public/Home.jsx';
 import Inscription from './pages/public/Inscription.jsx';
 import Connexion from './pages/public/Connexion.jsx';
@@ -15,12 +15,18 @@ import Questions from './pages/prof/Questions.jsx';
 import Planning from './pages/prof/Planning.jsx';
 import Paiements from './pages/prof/Paiements.jsx';
 import Site from './pages/prof/Site.jsx';
+import CompteProf from './pages/prof/Compte.jsx';
 import Messages from './pages/Messages.jsx';
 import CoursDetail from './pages/CoursDetail.jsx';
 import EleveAccueil from './pages/eleve/Accueil.jsx';
 import EleveCours from './pages/eleve/Cours.jsx';
 import EleveDevoirs from './pages/eleve/Devoirs.jsx';
 import Compte from './pages/eleve/Compte.jsx';
+import Presences from './pages/prof/Presences.jsx';
+import Discussion from './pages/Discussion.jsx';
+import Suivi, { CompteParent } from './pages/parent/Suivi.jsx';
+import Recu from './pages/prof/Recu.jsx';
+import Hors from './components/Hors.jsx';
 
 function Toast() {
   const { error } = useStatus();
@@ -46,7 +52,7 @@ function Shell({ items, children }) {
   const close = () => setOpen(false);
   const side = (
     <aside className={'side' + (open ? ' open' : '')}>
-      <div className="brand">{site.nom}<small>{me.role === 'prof' ? 'Espace professeur' : 'Espace élève'}</small></div>
+      <div className="brand">{site.nom}<small>{me.role === 'prof' ? 'Espace professeur' : me.role === 'parent' ? 'Espace parent' : 'Espace élève'}</small></div>
       <nav className="nav stack" style={{ gap: 2 }} onClick={close}>
         {items.map((i) => (
           <NavLink key={i.to} to={i.to} end={i.end}>
@@ -65,6 +71,7 @@ function Shell({ items, children }) {
   return (
     <>
       <Toast />
+      <Hors />
       <div className="shell">
         {side}
         {open && <div className="scrim" onClick={close} />}
@@ -87,7 +94,7 @@ function ProfArea() {
   const { authReady } = useStatus();
   if (!authReady) return <Loading />;
   if (!me) return <Navigate to="/connexion" replace />;
-  if (me.role !== 'prof') return <Navigate to="/eleve" replace />;
+  if (me.role !== 'prof') return <Navigate to={espaceDe(me)} replace />;
   const attente = s.users.filter((u) => u.statut === 'en_attente').length;
   const nonLus = s.messages.filter((m) => m.toId === me.id && !m.lu).length;
   const sansRep = s.questions.filter((q) => !q.reponses.length).length;
@@ -98,12 +105,15 @@ function ProfArea() {
     { to: '/prof/classes', label: 'Classes' },
     { to: '/prof/cours', label: 'Cours' },
     { to: '/prof/devoirs', label: 'Devoirs' },
+    { to: '/prof/presences', label: 'Présences' },
     { to: '/prof/annonces', label: 'Annonces' },
+    { to: '/prof/discussion', label: 'Discussion' },
     { to: '/prof/questions', label: 'Questions', count: sansRep },
     { to: '/prof/messages', label: 'Messages', count: nonLus },
     { to: '/prof/planning', label: 'Planning' },
     { to: '/prof/paiements', label: 'Paiements' },
     { to: '/prof/site', label: 'Mon site' },
+    { to: '/prof/compte', label: 'Mon compte' },
   ];
   return (
     <Shell items={items}>
@@ -116,11 +126,15 @@ function ProfArea() {
         <Route path="cours/:id" element={<CoursDetail />} />
         <Route path="devoirs" element={<ProfDevoirs />} />
         <Route path="annonces" element={<Annonces />} />
+        <Route path="presences" element={<Presences />} />
+        <Route path="discussion" element={<Discussion />} />
+        <Route path="recu/:id" element={<Recu />} />
         <Route path="questions" element={<Questions />} />
         <Route path="messages" element={<Messages />} />
         <Route path="planning" element={<Planning />} />
         <Route path="paiements" element={<Paiements />} />
         <Route path="site" element={<Site />} />
+        <Route path="compte" element={<CompteProf />} />
         <Route path="*" element={<Navigate to="/prof" replace />} />
       </Routes>
     </Shell>
@@ -133,13 +147,14 @@ function EleveArea() {
   const { authReady } = useStatus();
   if (!authReady) return <Loading />;
   if (!me) return <Navigate to="/connexion" replace />;
-  if (me.role === 'prof') return <Navigate to="/prof" replace />;
+  if (me.role !== 'eleve') return <Navigate to={espaceDe(me)} replace />;
   const nonLus = s.messages.filter((m) => m.toId === me.id && !m.lu).length;
   const aRendre = s.devoirs.filter((d) => (me.classeIds || []).includes(d.classeId) && !d.rendus.some((r) => r.eleveId === me.id)).length;
   const items = [
     { to: '/eleve', label: 'Accueil', end: true },
     { to: '/eleve/cours', label: 'Mes cours' },
     { to: '/eleve/devoirs', label: 'Devoirs', count: aRendre },
+    { to: '/eleve/discussion', label: 'Discussion de classe' },
     { to: '/eleve/messages', label: 'Messages', count: nonLus },
     { to: '/eleve/compte', label: 'Mon compte' },
   ];
@@ -150,9 +165,31 @@ function EleveArea() {
         <Route path="cours" element={<EleveCours />} />
         <Route path="cours/:id" element={<CoursDetail />} />
         <Route path="devoirs" element={<EleveDevoirs />} />
+        <Route path="discussion" element={<Discussion />} />
         <Route path="messages" element={<Messages />} />
         <Route path="compte" element={<Compte />} />
         <Route path="*" element={<Navigate to="/eleve" replace />} />
+      </Routes>
+    </Shell>
+  );
+}
+
+function ParentArea() {
+  const me = useMe();
+  const { authReady } = useStatus();
+  if (!authReady) return <Loading />;
+  if (!me) return <Navigate to="/connexion" replace />;
+  if (me.role !== 'parent') return <Navigate to={espaceDe(me)} replace />;
+  const items = [
+    { to: '/parent', label: 'Suivi', end: true },
+    { to: '/parent/compte', label: 'Mon compte' },
+  ];
+  return (
+    <Shell items={items}>
+      <Routes>
+        <Route index element={<Suivi />} />
+        <Route path="compte" element={<CompteParent />} />
+        <Route path="*" element={<Navigate to="/parent" replace />} />
       </Routes>
     </Shell>
   );
@@ -170,6 +207,7 @@ export default function App() {
         <Route path="/connexion" element={<Connexion />} />
         <Route path="/prof/*" element={<ProfArea />} />
         <Route path="/eleve/*" element={<EleveArea />} />
+        <Route path="/parent/*" element={<ParentArea />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

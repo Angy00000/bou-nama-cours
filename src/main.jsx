@@ -4,3 +4,8 @@ import App from './App.jsx';
 import './styles.css';
 
 createRoot(document.getElementById('root')).render(<StrictMode><App /></StrictMode>);
+
+// Mode hors connexion (pas dans l'aperçu Claude)
+if ('serviceWorker' in navigator && !import.meta.env.VITE_ARTIFACT && location.hostname !== 'localhost') {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}

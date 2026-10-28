@@ -25,6 +25,7 @@ export default function Planning() {
                   <div className="row between"><b style={{ fontVariantNumeric: 'tabular-nums' }}>{x.heure} · {x.duree} min</b><Confirm label="×" onYes={() => supprimerSeance(x.id)} /></div>
                   <ClasseTag classe={s.classes.find((c) => c.id === x.classeId)} />
                   <span className="small muted">{x.lieu}</span>
+                  {x.lien && <a className="small" href={x.lien} target="_blank" rel="noreferrer">Lien visio</a>}
                 </div>
               )) : <span className="small muted">Libre</span>}
             </div>
@@ -37,7 +38,7 @@ export default function Planning() {
 }
 
 function SeanceForm({ classes, onClose }) {
-  const [f, setF] = useState({ classeId: classes[0].id, jour: 1, heure: '17:00', duree: 120, lieu: '' });
+  const [f, setF] = useState({ classeId: classes[0].id, jour: 1, heure: '17:00', duree: 120, lieu: '', lien: '' });
   const up = (k) => (e) => setF({ ...f, [k]: e.target.value });
   return (
     <Modal title="Nouvelle séance" onClose={onClose}>
@@ -49,7 +50,8 @@ function SeanceForm({ classes, onClose }) {
           <Field label="Durée (min)"><input className="input" type="number" value={f.duree} onChange={up('duree')} /></Field>
         </div>
         <Field label="Lieu"><input className="input" value={f.lieu} onChange={up('lieu')} placeholder="Ex. Lycée salle 12, ou chez l’élève" /></Field>
-        <button className="btn primary" onClick={() => { ajouterSeance({ ...f, duree: Number(f.duree) }); onClose(); }}>Ajouter</button>
+        <Field label="Lien visio (cours en ligne)" hint="Facultatif. Lien Google Meet, ex. https://meet.google.com/abc-defg-hij"><input className="input" value={f.lien} onChange={up('lien')} placeholder="https://" /></Field>
+        <button className="btn primary" onClick={async () => { if (await ajouterSeance({ ...f, duree: Number(f.duree) })) onClose(); }}>Ajouter</button>
       </div>
     </Modal>
   );

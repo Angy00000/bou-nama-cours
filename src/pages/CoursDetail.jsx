@@ -27,8 +27,8 @@ export default function CoursDetail() {
       <div className="card stack">
         {c.description && <p className="muted">{c.description}</p>}
         {c.type === 'texte' && <div className="pre">{c.contenu}</div>}
-        {c.type === 'lien' && <a className="btn dark" href={c.url} target="_blank" rel="noreferrer" style={{ justifySelf: 'start' }}>Ouvrir le lien</a>}
-        {c.type === 'fichier' && <div><FichierLien fichierId={c.fichierId} fichierNom={c.fichierNom} /></div>}
+        {c.type === 'lien' && <a className="btn dark" href={c.url} target="_blank" rel="noreferrer" style={{ justifySelf: 'start' }}>{/youtu\.?be/.test(c.url) ? 'Regarder la vidéo' : 'Ouvrir le lien'}</a>}
+        {c.type === 'fichier' && <div><FichierLien fichierId={c.fichierId} fichierNom={c.fichierNom} apercu /></div>}
         {prof && <div><Confirm label="Supprimer ce cours" onYes={() => { supprimerCours(c.id); nav(base); }} /></div>}
       </div>
 

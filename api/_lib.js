@@ -71,18 +71,19 @@ export function publicUser(u, full) {
 
 // Construit tout ce que l'utilisateur a le droit de voir
 export async function loadState(me) {
+  if (me.role === 'parent') return loadParent(me);
   const prof = me.role === 'prof';
   const cls = me.classe_ids || [];
   const [site] = await q('select data from site where id = 1');
   const users = prof
-    ? await q('select * from users order by nom')
+    ? await q("select * from users where role <> 'parent' order by nom")
     : await q("select * from users where role = 'prof' or id = $1 or (statut = 'actif' and classe_ids && $2::text[])", [me.id, cls]);
+  const parents = prof ? await q("select id, nom, tel, enfant_ids from users where role = 'parent'") : [];
   const classes = prof ? await q('select * from classes order by nom') : await q('select * from classes where id = any($1)', [cls]);
   const cours = prof
     ? await q('select * from cours order by date desc')
     : await q('select * from cours where classe_id = any($1) order by date desc', [cls]);
-  const coursIds = cours.map((c) => c.id);
-  const questions = await q('select * from questions where cours_id = any($1) order by date', [coursIds]);
+  const questions = await q('select * from questions where cours_id = any($1) order by date', [cours.map((c) => c.id)]);
   const reponses = await q('select * from reponses where question_id = any($1) order by date', [questions.map((x) => x.id)]);
   const annonces = prof
     ? await q('select * from annonces order by date desc')
@@ -91,19 +92,22 @@ export async function loadState(me) {
   const devoirs = prof
     ? await q('select * from devoirs order by date desc')
     : await q('select * from devoirs where classe_id = any($1) order by date desc', [cls]);
-  const rendus = prof
-    ? await q('select * from rendus')
-    : await q('select * from rendus where eleve_id = $1', [me.id]);
+  const rendus = prof ? await q('select * from rendus') : await q('select * from rendus where eleve_id = $1', [me.id]);
   const seances = prof ? await q('select * from seances') : await q('select * from seances where classe_id = any($1)', [cls]);
   const paiements = prof
     ? await q('select * from paiements order by date desc')
     : await q('select * from paiements where eleve_id = $1 order by date desc', [me.id]);
+  const presences = prof
+    ? await q("select * from presences where date > now() - interval '120 days'")
+    : await q('select * from presences where eleve_id = $1', [me.id]);
+  const discussions = await q("select * from discussions where classe_id = any($1) and date > now() - interval '60 days' order by date", [classes.map((c) => c.id)]);
 
   return {
     site: site?.data || {},
     me: publicUser(me, true),
     users: users.map((u) => publicUser(u, prof || u.id === me.id)),
-    classes: classes.map((c) => ({ id: c.id, nom: c.nom, lieu: c.lieu, niveau: c.niveau, matiere: c.matiere, couleur: c.couleur })),
+    parents: parents.map((p) => ({ id: p.id, nom: p.nom, tel: p.tel, enfantIds: p.enfant_ids || [] })),
+    classes: classes.map(mapClasse),
     cours: cours.map((c) => ({ id: c.id, classeId: c.classe_id, chapitre: c.chapitre, titre: c.titre, description: c.description, type: c.type, url: c.url, contenu: c.contenu, fichierId: c.fichier_id, fichierNom: c.fichier_nom, date: iso(c.date) })),
     questions: questions.map((x) => ({
       id: x.id, coursId: x.cours_id, auteurId: x.auteur_id, texte: x.texte, date: iso(x.date),
@@ -111,11 +115,44 @@ export async function loadState(me) {
     })),
     annonces: annonces.map((a) => ({ id: a.id, classeId: a.classe_id, texte: a.texte, date: iso(a.date) })),
     messages: messages.map((m) => ({ id: m.id, fromId: m.from_id, toId: m.to_id, texte: m.texte, date: iso(m.date), lu: m.lu })),
-    devoirs: devoirs.map((d) => ({
-      id: d.id, classeId: d.classe_id, titre: d.titre, consigne: d.consigne, dateLimite: day(d.date_limite), fichierId: d.fichier_id, fichierNom: d.fichier_nom, date: iso(d.date),
-      rendus: rendus.filter((r) => r.devoir_id === d.id).map((r) => ({ eleveId: r.eleve_id, texte: r.texte, fichierId: r.fichier_id, fichierNom: r.fichier_nom, note: r.note || '', commentaire: r.commentaire || '', date: iso(r.date) })),
-    })),
-    seances: seances.map((x) => ({ id: x.id, classeId: x.classe_id, jour: x.jour, heure: x.heure, duree: x.duree, lieu: x.lieu })),
-    paiements: paiements.map((p) => ({ id: p.id, eleveId: p.eleve_id, montant: p.montant, mois: p.mois, moyen: p.moyen, date: iso(p.date) })),
+    devoirs: devoirs.map((d) => mapDevoir(d, rendus)),
+    seances: seances.map(mapSeance),
+    paiements: paiements.map(mapPaiement),
+    presences: presences.map(mapPresence),
+    discussions: discussions.map((x) => ({ id: x.id, classeId: x.classe_id, auteurId: x.auteur_id, texte: x.texte, date: iso(x.date) })),
   };
 }
+
+// Parent : uniquement notes, paiements, présences et séances de ses enfants
+async function loadParent(me) {
+  const ids = me.enfant_ids || [];
+  const [site] = await q('select data from site where id = 1');
+  const enfants = await q("select * from users where id = any($1) and role = 'eleve'", [ids]);
+  const cls = [...new Set(enfants.flatMap((e) => e.classe_ids || []))];
+  const prof = await q("select * from users where role = 'prof'");
+  const classes = await q('select * from classes where id = any($1)', [cls]);
+  const devoirs = await q('select * from devoirs where classe_id = any($1) order by date desc', [cls]);
+  const rendus = await q('select * from rendus where eleve_id = any($1)', [ids]);
+  const paiements = await q('select * from paiements where eleve_id = any($1) order by date desc', [ids]);
+  const presences = await q('select * from presences where eleve_id = any($1)', [ids]);
+  const seances = await q('select * from seances where classe_id = any($1)', [cls]);
+  return {
+    site: site?.data || {},
+    me: { ...publicUser(me, true), enfantIds: ids },
+    users: [...enfants.map((u) => publicUser(u, true)), ...prof.map((u) => publicUser(u))],
+    parents: [], classes: classes.map(mapClasse), cours: [], questions: [], annonces: [], messages: [], discussions: [],
+    devoirs: devoirs.map((d) => mapDevoir(d, rendus)),
+    seances: seances.map(mapSeance),
+    paiements: paiements.map(mapPaiement),
+    presences: presences.map(mapPresence),
+  };
+}
+
+const mapClasse = (c) => ({ id: c.id, nom: c.nom, lieu: c.lieu, niveau: c.niveau, matiere: c.matiere, couleur: c.couleur });
+const mapSeance = (x) => ({ id: x.id, classeId: x.classe_id, jour: x.jour, heure: x.heure, duree: x.duree, lieu: x.lieu, lien: x.lien || '' });
+const mapPaiement = (p) => ({ id: p.id, eleveId: p.eleve_id, montant: p.montant, mois: p.mois, moyen: p.moyen, date: iso(p.date) });
+const mapPresence = (p) => ({ classeId: p.classe_id, eleveId: p.eleve_id, date: day(p.date), statut: p.statut });
+const mapDevoir = (d, rendus) => ({
+  id: d.id, classeId: d.classe_id, titre: d.titre, consigne: d.consigne, dateLimite: day(d.date_limite), fichierId: d.fichier_id, fichierNom: d.fichier_nom, date: iso(d.date),
+  rendus: rendus.filter((r) => r.devoir_id === d.id).map((r) => ({ eleveId: r.eleve_id, texte: r.texte, fichierId: r.fichier_id, fichierNom: r.fichier_nom, note: r.note || '', commentaire: r.commentaire || '', date: iso(r.date) })),
+});

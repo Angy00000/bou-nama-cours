@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { login, useMe } from '../../data/store.js';
+import { login, useMe, espaceDe } from '../../data/store.js';
 import { Field } from '../../components/ui.jsx';
 import { PubHead, PubFoot } from './Home.jsx';
 
@@ -11,7 +11,7 @@ export default function Connexion() {
   const [pw, setPw] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
-  if (me) return <Navigate to={me.role === 'prof' ? '/prof' : '/eleve'} replace />;
+  if (me) return <Navigate to={espaceDe(me)} replace />;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -19,7 +19,7 @@ export default function Connexion() {
     const r = await login(tel, pw);
     setBusy(false);
     if (r.error) return setErr(r.error);
-    nav(r.user.role === 'prof' ? '/prof' : '/eleve');
+    nav(espaceDe(r.user));
   };
 
   return (
@@ -33,6 +33,7 @@ export default function Connexion() {
           {err && <p className="err">{err}</p>}
           <button className="btn primary block" disabled={busy}>{busy ? 'Connexion…' : 'Se connecter'}</button>
           <p className="small muted">Pas encore inscrit ? <Link to="/inscription">Faire une demande</Link></p>
+          <p className="small muted">Parents : connectez-vous avec votre numéro. Mot de passe de départ : les 4 derniers chiffres de votre numéro.</p>
         </form>
       </div>
       <PubFoot />
