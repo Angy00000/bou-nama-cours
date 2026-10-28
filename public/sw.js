@@ -1,5 +1,5 @@
 // Service worker IBD RENF : permet de rouvrir l'app et les cours déjà consultés sans connexion.
-const APP = 'app-v2';
+const APP = 'app-v3';
 const API = 'api-v1';
 
 self.addEventListener('install', (e) => {
