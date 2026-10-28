@@ -21,12 +21,15 @@ function Devoir({ d, me, classe }) {
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [edit, setEdit] = useState(false);
+  const [err, setErr] = useState('');
   const passe = d.dateLimite < new Date().toISOString().slice(0, 10);
   const envoyer = async () => {
-    setBusy(true);
-    const extra = file ? await saveFile(file) : {};
-    rendreDevoir(d.id, { eleveId: me.id, texte: txt.trim(), ...extra });
-    setBusy(false); setEdit(false); setTxt(''); setFile(null);
+    setBusy(true); setErr('');
+    try {
+      const extra = file ? await saveFile(file) : {};
+      if (await rendreDevoir(d.id, { texte: txt.trim(), ...extra })) { setEdit(false); setTxt(''); setFile(null); }
+    } catch (e) { setErr(e.message); }
+    setBusy(false);
   };
   return (
     <div className="card stack">
@@ -51,7 +54,8 @@ function Devoir({ d, me, classe }) {
         <div className="stack" style={{ gap: 8, borderTop: '1px solid var(--line)', paddingTop: 10 }}>
           <textarea className="input" placeholder="Votre réponse ou un message pour le professeur" value={txt} onChange={(e) => setTxt(e.target.value)} />
           <input className="input" type="file" accept="image/*,.pdf,.doc,.docx" onChange={(e) => setFile(e.target.files[0] || null)} />
-          <span className="small muted">Astuce : prenez votre copie en photo avec le téléphone.</span>
+          <span className="small muted">Astuce : prenez votre copie en photo avec le téléphone (4 Mo maximum).</span>
+          {err && <p className="err">{err}</p>}
           <button className="btn primary" style={{ justifySelf: 'start' }} disabled={busy || (!txt.trim() && !file)} onClick={envoyer}>{busy ? 'Envoi…' : 'Rendre le devoir'}</button>
         </div>
       )}

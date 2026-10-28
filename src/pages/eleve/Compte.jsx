@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useData, useMe, updateUser, statutPaiement } from '../../data/store.js';
+import { useData, useMe, changerMotDePasse, statutPaiement } from '../../data/store.js';
 import { PageHead, Field, PaiementBadge, fcfa, fdate, fmois, ClasseTag } from '../../components/ui.jsx';
 
 export default function Compte() {
@@ -24,7 +24,7 @@ export default function Compte() {
           <div className="stack" style={{ gap: 4 }}>{(me.classeIds || []).map((id) => <ClasseTag key={id} classe={s.classes.find((c) => c.id === id)} />)}</div>
           <Field label="Nouveau mot de passe"><input className="input" type="password" value={pw} onChange={(e) => { setPw(e.target.value); setOk(false); }} /></Field>
           <div className="row">
-            <button className="btn dark" disabled={pw.length < 4} onClick={() => { updateUser(me.id, { password: pw }); setPw(''); setOk(true); }}>Changer</button>
+            <button className="btn dark" disabled={pw.length < 4} onClick={async () => { if (await changerMotDePasse(pw)) { setPw(''); setOk(true); } }}>Changer</button>
             {ok && <span className="badge ok">Mot de passe changé</span>}
           </div>
         </div>

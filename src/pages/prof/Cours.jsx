@@ -35,16 +35,15 @@ function CoursForm({ classes, defaut, chapitres, onClose }) {
     if (!f.titre.trim()) return setErr('Donnez un titre au cours.');
     if (f.type === 'fichier' && !file) return setErr('Choisissez un fichier.');
     if (f.type === 'lien' && !/^https?:\/\//.test(f.url)) return setErr('Le lien doit commencer par https://');
-    if (file && file.size > 25 * 1024 * 1024) return setErr('Fichier trop lourd (25 Mo max). Pour une vidéo, utilisez plutôt un lien YouTube.');
+    if (file && file.size > 4 * 1024 * 1024) return setErr('Fichier trop lourd (4 Mo maximum). Pour une vidéo, utilisez plutôt un lien YouTube.');
     setBusy(true);
     try {
       const extra = f.type === 'fichier' ? await saveFile(file) : {};
-      ajouterCours({ ...f, ...extra });
-      onClose();
-    } catch {
-      setErr('Le fichier n’a pas pu être enregistré.');
-      setBusy(false);
+      if (await ajouterCours({ ...f, ...extra })) return onClose();
+    } catch (e) {
+      setErr(e.message || 'Le fichier n’a pas pu être enregistré.');
     }
+    setBusy(false);
   };
 
   return (
@@ -68,7 +67,7 @@ function CoursForm({ classes, defaut, chapitres, onClose }) {
             ))}
           </div>
         </Field>
-        {f.type === 'fichier' && <Field label="Fichier" hint="PDF, Word, image, audio. 25 Mo maximum."><input className="input" type="file" onChange={(e) => setFile(e.target.files[0] || null)} /></Field>}
+        {f.type === 'fichier' && <Field label="Fichier" hint="PDF, Word, image, audio. 4 Mo maximum."><input className="input" type="file" onChange={(e) => setFile(e.target.files[0] || null)} /></Field>}
         {f.type === 'lien' && <Field label="Adresse du lien" hint="YouTube (non répertorié), Google Drive…"><input className="input" value={f.url} onChange={up('url')} placeholder="https://" /></Field>}
         {f.type === 'texte' && <Field label="Contenu"><textarea className="input" style={{ minHeight: 180 }} value={f.contenu} onChange={up('contenu')} /></Field>}
         {err && <p className="err">{err}</p>}

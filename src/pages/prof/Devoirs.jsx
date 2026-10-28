@@ -42,11 +42,16 @@ function DevoirForm({ classes, onClose }) {
   const [f, setF] = useState({ classeId: classes[0].id, titre: '', consigne: '', dateLimite: '' });
   const [file, setFile] = useState(null);
   const up = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
   const save = async () => {
     if (!f.titre.trim() || !f.dateLimite) return;
-    const extra = file ? await saveFile(file) : {};
-    ajouterDevoir({ ...f, ...extra });
-    onClose();
+    setBusy(true);
+    try {
+      const extra = file ? await saveFile(file) : {};
+      if (await ajouterDevoir({ ...f, ...extra })) return onClose();
+    } catch (e) { setErr(e.message); }
+    setBusy(false);
   };
   return (
     <Modal title="Nouveau devoir" onClose={onClose}>
@@ -58,7 +63,8 @@ function DevoirForm({ classes, onClose }) {
         <Field label="Titre"><input className="input" value={f.titre} onChange={up('titre')} /></Field>
         <Field label="Consigne"><textarea className="input" value={f.consigne} onChange={up('consigne')} /></Field>
         <Field label="Sujet en pièce jointe (facultatif)"><input className="input" type="file" onChange={(e) => setFile(e.target.files[0] || null)} /></Field>
-        <button className="btn primary" disabled={!f.titre.trim() || !f.dateLimite} onClick={save}>Donner le devoir</button>
+        {err && <p className="err">{err}</p>}
+        <button className="btn primary" disabled={busy || !f.titre.trim() || !f.dateLimite} onClick={save}>{busy ? 'Envoi…' : 'Donner le devoir'}</button>
       </div>
     </Modal>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BrowserRouter, MemoryRouter, Routes, Route, Navigate, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useMe, useData, logout, resetDemo } from './data/store.js';
+import { useMe, useData, useStatus, logout, clearError } from './data/store.js';
 import Home from './pages/public/Home.jsx';
 import Inscription from './pages/public/Inscription.jsx';
 import Connexion from './pages/public/Connexion.jsx';
@@ -22,13 +22,19 @@ import EleveCours from './pages/eleve/Cours.jsx';
 import EleveDevoirs from './pages/eleve/Devoirs.jsx';
 import Compte from './pages/eleve/Compte.jsx';
 
-function DemoBar() {
+function Toast() {
+  const { error } = useStatus();
+  if (!error) return null;
   return (
-    <div className="demo pad">
-      <span>Version de démonstration : les données restent sur cet appareil.</span>
-      <button onClick={() => { resetDemo(); window.location.reload(); }}>Réinitialiser la démo</button>
+    <div className="toast pad" role="alert">
+      <span>{error}</span>
+      <button onClick={clearError}>OK</button>
     </div>
   );
+}
+
+function Loading() {
+  return <div className="empty" style={{ margin: 40 }}>Chargement…</div>;
 }
 
 function Shell({ items, children }) {
@@ -58,7 +64,7 @@ function Shell({ items, children }) {
   const current = items.find((i) => (i.end ? loc.pathname === i.to : loc.pathname.startsWith(i.to)));
   return (
     <>
-      <DemoBar />
+      <Toast />
       <div className="shell">
         {side}
         {open && <div className="scrim" onClick={close} />}
@@ -78,6 +84,8 @@ function Shell({ items, children }) {
 function ProfArea() {
   const me = useMe();
   const s = useData();
+  const { authReady } = useStatus();
+  if (!authReady) return <Loading />;
   if (!me) return <Navigate to="/connexion" replace />;
   if (me.role !== 'prof') return <Navigate to="/eleve" replace />;
   const attente = s.users.filter((u) => u.statut === 'en_attente').length;
@@ -122,6 +130,8 @@ function ProfArea() {
 function EleveArea() {
   const me = useMe();
   const s = useData();
+  const { authReady } = useStatus();
+  if (!authReady) return <Loading />;
   if (!me) return <Navigate to="/connexion" replace />;
   if (me.role === 'prof') return <Navigate to="/prof" replace />;
   const nonLus = s.messages.filter((m) => m.toId === me.id && !m.lu).length;
@@ -155,9 +165,9 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<><DemoBar /><Home /></>} />
-        <Route path="/inscription" element={<><DemoBar /><Inscription /></>} />
-        <Route path="/connexion" element={<><DemoBar /><Connexion /></>} />
+        <Route path="/" element={<><Toast /><Home /></>} />
+        <Route path="/inscription" element={<Inscription />} />
+        <Route path="/connexion" element={<Connexion />} />
         <Route path="/prof/*" element={<ProfArea />} />
         <Route path="/eleve/*" element={<EleveArea />} />
         <Route path="*" element={<Navigate to="/" replace />} />

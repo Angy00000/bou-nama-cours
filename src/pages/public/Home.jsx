@@ -30,7 +30,7 @@ export function PubFoot() {
 
 export default function Home() {
   const site = useData((s) => s.site);
-  const nbEleves = useData((s) => s.users.filter((u) => u.role === 'eleve' && u.statut === 'actif').length);
+  const nbEleves = useData((s) => s.nbEleves);
   return (
     <>
       <PubHead />

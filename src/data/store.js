@@ -1,171 +1,127 @@
-// Couche de données — MODE DÉMO (navigateur).
-// Toute l'app passe par ce module : pour brancher Supabase plus tard,
-// on remplace l'implémentation de ces fonctions sans toucher aux pages.
+// Couche de données : tout passe par l'API (/api), base Neon côté serveur.
+// Les pages lisent l'état avec useData() et appellent les actions ci-dessous.
 import { useSyncExternalStore } from 'react';
-import { seed } from './seed.js';
 
-const KEY = 'bounama-demo-v1';
-const SESSION = 'bounama-session';
+const TOKEN = 'bounama-token';
+const EMPTY = {
+  site: { nom: '', slogan: '', prof: '', apropos: '', matieres: '', niveaux: '', tel: '', zone: '', tarifs: [] },
+  nbEleves: 0, me: null, users: [], classes: [], cours: [], questions: [], annonces: [],
+  messages: [], devoirs: [], seances: [], paiements: [],
+};
+let state = EMPTY;
+let status = { publicReady: false, authReady: false, error: '' };
 const listeners = new Set();
+const emit = () => listeners.forEach((l) => l());
 
-function load() {
-  try {
-    const s = localStorage.getItem(KEY);
-    if (s) return JSON.parse(s);
-  } catch {}
-  return seed();
-}
-let state = load();
-
-function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
-  listeners.forEach((l) => l());
-}
-function set(fn) { state = { ...state }; fn(state); save(); }
-
-export const uid = (p = 'id') => p + '_' + Math.random().toString(36).slice(2, 9);
-export const now = () => new Date().toISOString();
+let token = null;
+try { token = localStorage.getItem(TOKEN); } catch {}
+const setToken = (t) => { token = t; try { t ? localStorage.setItem(TOKEN, t) : localStorage.removeItem(TOKEN); } catch {} };
 
 export function useData(sel = (s) => s) {
-  return useSyncExternalStore(
-    (cb) => { listeners.add(cb); return () => listeners.delete(cb); },
-    () => sel(state)
-  );
+  return useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => sel(state));
 }
-export const getState = () => state;
+export function useStatus() {
+  return useSyncExternalStore((cb) => { listeners.add(cb); return () => listeners.delete(cb); }, () => status);
+}
+export const useMe = () => useData((s) => s.me);
+const setStatus = (p) => { status = { ...status, ...p }; emit(); };
+export const clearError = () => setStatus({ error: '' });
 
-export function resetDemo() {
-  state = seed();
-  try { localStorage.removeItem(SESSION); } catch {}
-  save();
+async function api(path, opts = {}) {
+  const headers = { ...(opts.headers || {}) };
+  if (token) headers.Authorization = 'Bearer ' + token;
+  if (opts.json !== undefined) { headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(opts.json); }
+  let r;
+  try { r = await fetch('/api/' + path, { ...opts, headers }); }
+  catch { throw new Error('Pas de connexion internet. Réessayez.'); }
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 401 && token && path !== 'login') { setToken(null); state = { ...state, me: null }; emit(); }
+  if (!r.ok) throw new Error(data.error || 'Une erreur est survenue.');
+  return data;
 }
+const applyState = (s) => { state = { ...state, ...s }; emit(); };
+
+/* ---------- Chargement ---------- */
+export async function loadPublic() {
+  try { const d = await api('public'); state = { ...state, site: d.site, nbEleves: d.nbEleves }; } catch {}
+  setStatus({ publicReady: true });
+}
+export async function refresh() {
+  if (!token) return setStatus({ authReady: true });
+  try { const d = await api('state'); applyState(d.state); } catch {}
+  setStatus({ authReady: true });
+}
+loadPublic();
+refresh();
+// Mise à jour régulière (nouveaux messages, devoirs rendus…)
+setInterval(() => { if (token && document.visibilityState === 'visible') refresh(); }, 20000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && token) refresh(); });
 
 /* ---------- Session ---------- */
-let sessionId = null;
-try { sessionId = localStorage.getItem(SESSION); } catch {}
-export function useMe() {
-  const users = useData((s) => s.users);
-  return users.find((u) => u.id === sessionId) || null;
-}
-export function login(tel, password) {
-  const t = normTel(tel);
-  const u = state.users.find((x) => normTel(x.tel) === t && x.password === password);
-  if (!u) return { error: 'Numéro ou mot de passe incorrect.' };
-  if (u.statut === 'en_attente') return { error: "Votre inscription n'a pas encore été validée par le professeur." };
-  if (u.statut === 'refuse') return { error: "Votre inscription n'a pas été acceptée. Contactez le professeur." };
-  sessionId = u.id;
-  try { localStorage.setItem(SESSION, u.id); } catch {}
-  listeners.forEach((l) => l());
-  return { user: u };
-}
-export function loginAs(id) {
-  sessionId = id;
-  try { localStorage.setItem(SESSION, id); } catch {}
-  listeners.forEach((l) => l());
+export async function login(tel, password) {
+  try {
+    const d = await api('login', { method: 'POST', json: { tel, password } });
+    setToken(d.token); applyState(d.state);
+    return { user: d.state.me };
+  } catch (e) { return { error: e.message }; }
 }
 export function logout() {
-  sessionId = null;
-  try { localStorage.removeItem(SESSION); } catch {}
-  listeners.forEach((l) => l());
+  setToken(null);
+  state = { ...EMPTY, site: state.site, nbEleves: state.nbEleves };
+  emit();
+}
+export async function inscrire(d) {
+  try { await api('inscription', { method: 'POST', json: d }); return { ok: true }; }
+  catch (e) { return { error: e.message }; }
 }
 export const normTel = (t = '') => String(t).replace(/\D/g, '').replace(/^221/, '');
 
-/* ---------- Site ---------- */
-export const updateSite = (patch) => set((s) => { s.site = { ...s.site, ...patch }; });
-
-/* ---------- Inscriptions / élèves ---------- */
-export function inscrire(d) {
-  if (state.users.some((u) => normTel(u.tel) === normTel(d.tel)))
-    return { error: 'Ce numéro est déjà inscrit. Connectez-vous ou contactez le professeur.' };
-  const u = { id: uid('u'), role: 'eleve', statut: 'en_attente', classeIds: [], creeLe: now(), ...d };
-  set((s) => { s.users = [...s.users, u]; });
-  return { user: u };
+/* ---------- Actions ---------- */
+async function act(type, p) {
+  try {
+    const d = await api('action', { method: 'POST', json: { type, p } });
+    applyState(d.state);
+    if (type === 'updateSite') state = { ...state }; // le site public suit
+    return true;
+  } catch (e) { setStatus({ error: e.message }); return false; }
 }
-export const updateUser = (id, patch) =>
-  set((s) => { s.users = s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)); });
-export function ajouterEleve(d) {
-  const u = { id: uid('u'), role: 'eleve', statut: 'actif', classeIds: [], creeLe: now(), ...d };
-  set((s) => { s.users = [...s.users, u]; });
-  return u;
-}
-export const supprimerUser = (id) => set((s) => { s.users = s.users.filter((u) => u.id !== id); });
+export const updateSite = (p) => act('updateSite', p).then((ok) => { if (ok) loadPublic(); return ok; });
+export const updateUser = (id, patch) => act('updateUser', { id, patch });
+export const ajouterEleve = (d) => act('ajouterEleve', d);
+export const supprimerUser = (id) => act('supprimerUser', { id });
+export const ajouterClasse = (d) => act('ajouterClasse', d);
+export const updateClasse = (id, patch) => act('updateClasse', { id, patch });
+export const supprimerClasse = (id) => act('supprimerClasse', { id });
+export const ajouterCours = (d) => act('ajouterCours', d);
+export const supprimerCours = (id) => act('supprimerCours', { id });
+export const ajouterAnnonce = (d) => act('ajouterAnnonce', d);
+export const supprimerAnnonce = (id) => act('supprimerAnnonce', { id });
+export const poserQuestion = (d) => act('poserQuestion', d);
+export const repondreQuestion = (questionId, d) => act('repondreQuestion', { questionId, texte: d.texte });
+export const envoyerMessage = (d) => act('envoyerMessage', d);
+export const marquerLus = (_moi, autreId) => act('marquerLus', { autreId });
+export const ajouterDevoir = (d) => act('ajouterDevoir', d);
+export const supprimerDevoir = (id) => act('supprimerDevoir', { id });
+export const rendreDevoir = (devoirId, r) => act('rendreDevoir', { devoirId, ...r });
+export const noterRendu = (devoirId, eleveId, patch) => act('noterRendu', { devoirId, eleveId, patch });
+export const ajouterSeance = (d) => act('ajouterSeance', d);
+export const supprimerSeance = (id) => act('supprimerSeance', { id });
+export const ajouterPaiement = (d) => act('ajouterPaiement', d);
+export const supprimerPaiement = (id) => act('supprimerPaiement', { id });
+export const changerMotDePasse = (password) => act('changerMotDePasse', { password });
 
-/* ---------- Classes ---------- */
-export const ajouterClasse = (d) => set((s) => { s.classes = [...s.classes, { id: uid('c'), ...d }]; });
-export const updateClasse = (id, patch) =>
-  set((s) => { s.classes = s.classes.map((c) => (c.id === id ? { ...c, ...patch } : c)); });
-export const supprimerClasse = (id) => set((s) => {
-  s.classes = s.classes.filter((c) => c.id !== id);
-  s.users = s.users.map((u) => ({ ...u, classeIds: (u.classeIds || []).filter((x) => x !== id) }));
-});
-
-/* ---------- Cours ---------- */
-export const ajouterCours = (d) => set((s) => { s.cours = [{ id: uid('co'), date: now(), ...d }, ...s.cours]; });
-export const supprimerCours = (id) => set((s) => { s.cours = s.cours.filter((c) => c.id !== id); });
-
-/* ---------- Annonces ---------- */
-export const ajouterAnnonce = (d) => set((s) => { s.annonces = [{ id: uid('a'), date: now(), ...d }, ...s.annonces]; });
-export const supprimerAnnonce = (id) => set((s) => { s.annonces = s.annonces.filter((a) => a.id !== id); });
-
-/* ---------- Questions sous les cours ---------- */
-export const poserQuestion = (d) => set((s) => { s.questions = [...s.questions, { id: uid('q'), date: now(), reponses: [], ...d }]; });
-export const repondreQuestion = (qid, d) => set((s) => {
-  s.questions = s.questions.map((q) => (q.id === qid ? { ...q, reponses: [...q.reponses, { date: now(), ...d }] } : q));
-});
-
-/* ---------- Messages privés ---------- */
-export const envoyerMessage = (d) => set((s) => { s.messages = [...s.messages, { id: uid('m'), date: now(), lu: false, ...d }]; });
-export const marquerLus = (moi, autre) => set((s) => {
-  s.messages = s.messages.map((m) => (m.toId === moi && m.fromId === autre ? { ...m, lu: true } : m));
-});
-
-/* ---------- Devoirs ---------- */
-export const ajouterDevoir = (d) => set((s) => { s.devoirs = [{ id: uid('d'), date: now(), rendus: [], ...d }, ...s.devoirs]; });
-export const supprimerDevoir = (id) => set((s) => { s.devoirs = s.devoirs.filter((d) => d.id !== id); });
-export const rendreDevoir = (did, rendu) => set((s) => {
-  s.devoirs = s.devoirs.map((d) => d.id !== did ? d : {
-    ...d, rendus: [...d.rendus.filter((r) => r.eleveId !== rendu.eleveId), { date: now(), ...rendu }],
-  });
-});
-export const noterRendu = (did, eleveId, patch) => set((s) => {
-  s.devoirs = s.devoirs.map((d) => d.id !== did ? d : {
-    ...d, rendus: d.rendus.map((r) => (r.eleveId === eleveId ? { ...r, ...patch } : r)),
-  });
-});
-
-/* ---------- Planning ---------- */
-export const ajouterSeance = (d) => set((s) => { s.seances = [...s.seances, { id: uid('s'), ...d }]; });
-export const supprimerSeance = (id) => set((s) => { s.seances = s.seances.filter((x) => x.id !== id); });
-
-/* ---------- Paiements ---------- */
-export const ajouterPaiement = (d) => set((s) => { s.paiements = [{ id: uid('p'), date: now(), ...d }, ...s.paiements]; });
-export const supprimerPaiement = (id) => set((s) => { s.paiements = s.paiements.filter((p) => p.id !== id); });
-
-/* ---------- Fichiers (IndexedDB, pour ne pas saturer le stockage) ---------- */
-function idb() {
-  return new Promise((res, rej) => {
-    const r = indexedDB.open('bounama-fichiers', 1);
-    r.onupgradeneeded = () => r.result.createObjectStore('f');
-    r.onsuccess = () => res(r.result);
-    r.onerror = () => rej(r.error);
-  });
-}
+/* ---------- Fichiers ---------- */
+export const MAX_FICHIER = 4 * 1024 * 1024;
 export async function saveFile(file) {
-  const id = uid('f');
-  const db = await idb();
-  await new Promise((res, rej) => {
-    const tx = db.transaction('f', 'readwrite');
-    tx.objectStore('f').put(file, id);
-    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  if (file.size > MAX_FICHIER) throw new Error('Fichier trop lourd (4 Mo maximum). Pour une vidéo, utilisez un lien YouTube.');
+  return api('upload', {
+    method: 'POST', body: file,
+    headers: { 'Content-Type': file.type || 'application/octet-stream', 'X-Filename': encodeURIComponent(file.name) },
   });
-  return { fichierId: id, fichierNom: file.name, fichierType: file.type, fichierTaille: file.size };
 }
 export async function getFile(id) {
-  const db = await idb();
-  return new Promise((res, rej) => {
-    const r = db.transaction('f').objectStore('f').get(id);
-    r.onsuccess = () => res(r.result || null); r.onerror = () => rej(r.error);
-  });
+  const r = await fetch('/api/file?id=' + encodeURIComponent(id), { headers: token ? { Authorization: 'Bearer ' + token } : {} });
+  return r.ok ? r.blob() : null;
 }
 
 /* ---------- Helpers ---------- */

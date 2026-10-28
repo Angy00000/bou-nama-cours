@@ -10,13 +10,16 @@ export default function Inscription() {
   const [ok, setOk] = useState(false);
   const up = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
-  const submit = (e) => {
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
     e.preventDefault();
     if (!f.nom.trim() || !f.tel.trim() || !f.niveau.trim()) return setErr('Le nom, le téléphone et la classe sont obligatoires.');
     if (f.password.length < 4) return setErr('Choisissez un mot de passe d’au moins 4 caractères.');
     if (f.password !== f.password2) return setErr('Les deux mots de passe ne sont pas identiques.');
     const { password2, ...data } = f;
-    const r = inscrire(data);
+    setBusy(true);
+    const r = await inscrire(data);
+    setBusy(false);
     if (r.error) return setErr(r.error);
     setOk(true);
   };
@@ -58,7 +61,7 @@ export default function Inscription() {
               <Field label="Confirmer"><input className="input" type="password" value={f.password2} onChange={up('password2')} /></Field>
             </div>
             {err && <p className="err">{err}</p>}
-            <button className="btn primary block">Envoyer la demande</button>
+            <button className="btn primary block" disabled={busy}>{busy ? 'Envoi…' : 'Envoyer la demande'}</button>
             <p className="small muted">Déjà inscrit ? <Link to="/connexion">Se connecter</Link></p>
           </form>
         )}
