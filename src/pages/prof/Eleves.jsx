@@ -11,12 +11,12 @@ export default function Eleves() {
   const eleves = s.users
     .filter((u) => u.role === 'eleve' && u.statut === 'actif')
     .filter((u) => filtre === 'tous' || (u.classeIds || []).includes(filtre))
-    .filter((u) => !q || (u.nom + u.tel).toLowerCase().includes(q.toLowerCase()))
+    .filter((u) => !q || (u.nom + ' ' + (u.tel || '')).toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => a.nom.localeCompare(b.nom));
 
   return (
     <>
-      <PageHead title="Élèves" sub={`${eleves.length} élève(s)`}>
+      <PageHead title="Élèves" sub={`${eleves.length} élève(s)${eleves.filter((u) => !u.tel).length ? ` · ${eleves.filter((u) => !u.tel).length} sans numéro (pas encore d’accès)` : ""}`}>
         <button className="btn primary" onClick={() => setEdit({})}>Ajouter un élève</button>
       </PageHead>
       <div className="row">
@@ -35,7 +35,7 @@ export default function Eleves() {
                 <tr key={u.id}>
                   <td><b>{u.nom}</b><div className="small muted">{u.niveau}{u.ecole ? ' · ' + u.ecole : ''}</div></td>
                   <td><div className="stack" style={{ gap: 4 }}>{(u.classeIds || []).map((id) => <ClasseTag key={id} classe={s.classes.find((c) => c.id === id)} />)}</div></td>
-                  <td>{u.tel}</td>
+                  <td>{u.tel || <span className="badge warn">Sans numéro</span>}</td>
                   <td>{u.parentTel || '—'}{s.parents.some((p) => (p.enfantIds || []).includes(u.id)) && <div><span className="badge ok">Accès parent</span></div>}</td>
                   <td><PaiementBadge etat={statutPaiement(s, u).etat} /></td>
                   <td className="row" style={{ flexWrap: 'nowrap' }}>
@@ -56,14 +56,15 @@ export default function Eleves() {
 function EleveForm({ u, classes, parent, onClose }) {
   const [okParent, setOkParent] = useState(false);
   const isNew = !u.id;
-  const [f, setF] = useState({ nom: '', tel: '', parentTel: '', niveau: '', ecole: '', adresse: '', tarif: '', password: '', classeIds: [], ...u });
+  const [f, setF] = useState({ nom: '', parentTel: '', niveau: '', ecole: '', adresse: '', tarif: '', password: '', classeIds: [], ...u, tel: u.tel || '' });
   const [err, setErr] = useState('');
   const up = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const toggle = (id) => setF({ ...f, classeIds: f.classeIds.includes(id) ? f.classeIds.filter((x) => x !== id) : [...f.classeIds, id] });
   const save = async () => {
-    if (!f.nom.trim() || !f.tel.trim()) return setErr('Le nom et le téléphone sont obligatoires.');
-    const data = { ...f, tel: normTel(f.tel), tarif: Number(f.tarif) || 0 };
-    if (isNew && !data.password) data.password = data.tel.slice(-4);
+    if (!f.nom.trim()) return setErr('Le nom est obligatoire.');
+    const data = { ...f, tel: normTel(f.tel), parentTel: f.parentTel || '', tarif: Number(f.tarif) || 0 };
+    if (data.tel && data.tel.length < 7) return setErr('Numéro de téléphone incomplet.');
+    if (isNew && data.tel && !data.password) data.password = data.tel.slice(-4);
     const ok = isNew ? await ajouterEleve(data) : await updateUser(u.id, data);
     if (ok) onClose();
   };
@@ -72,7 +73,7 @@ function EleveForm({ u, classes, parent, onClose }) {
       <div className="stack">
         <Field label="Nom et prénom"><input className="input" value={f.nom} onChange={up('nom')} /></Field>
         <div className="form2">
-          <Field label="Téléphone (identifiant)"><input className="input" inputMode="tel" value={f.tel} onChange={up('tel')} /></Field>
+          <Field label="Téléphone (identifiant)" hint={f.tel ? 'Mot de passe de départ : les 4 derniers chiffres.' : 'Sans numéro, l’élève n’a pas encore accès à son espace.'}><input className="input" inputMode="tel" value={f.tel} onChange={up('tel')} /></Field>
           <Field label="Téléphone parent"><input className="input" inputMode="tel" value={f.parentTel} onChange={up('parentTel')} /></Field>
         </div>
         <div className="form2">

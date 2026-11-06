@@ -28,7 +28,7 @@ const PROF = {
     const [u] = await q('select * from users where id = $1', [id]);
     if (!u) throw fail(404, 'Élève introuvable.');
     const m = {
-      nom: t(patch.nom, 200) ?? u.nom, tel: patch.tel !== undefined ? normTel(patch.tel) : u.tel,
+      nom: t(patch.nom, 200) ?? u.nom, tel: patch.tel !== undefined ? normTel(patch.tel) || null : u.tel,
       statut: ['actif', 'en_attente', 'refuse'].includes(patch.statut) ? patch.statut : u.statut,
       niveau: patch.niveau !== undefined ? t(patch.niveau, 200) : u.niveau, ecole: patch.ecole !== undefined ? t(patch.ecole, 200) : u.ecole,
       parent_tel: patch.parentTel !== undefined ? normTel(patch.parentTel) || null : u.parent_tel,
@@ -36,26 +36,33 @@ const PROF = {
       tarif: patch.tarif !== undefined ? int(patch.tarif) : u.tarif,
       classe_ids: patch.classeIds !== undefined ? arr(patch.classeIds) : u.classe_ids,
     };
-    if (m.tel !== u.tel) {
+    if (m.tel && m.tel.length < 7) throw fail(400, 'Numéro de téléphone incomplet.');
+    if (u.role === 'prof' && !m.tel) throw fail(400, 'Le téléphone du professeur est obligatoire.');
+    if (m.tel && m.tel !== u.tel) {
       const [x] = await q('select 1 from users where tel = $1 and id <> $2', [m.tel, id]);
       if (x) throw fail(409, 'Ce numéro est déjà utilisé par un autre compte.');
     }
     await q(`update users set nom=$2, tel=$3, statut=$4, niveau=$5, ecole=$6, parent_tel=$7, adresse=$8, tarif=$9, classe_ids=$10 where id=$1`,
       [id, m.nom, m.tel, m.statut, m.niveau, m.ecole, m.parent_tel, m.adresse, m.tarif, m.classe_ids]);
     if (patch.password) await q('update users set password_hash = $2 where id = $1', [id, await bcrypt.hash(String(patch.password), 10)]);
+    // Numéro ajouté à un élève importé : accès ouvert avec les 4 derniers chiffres
+    else if (m.tel && !u.password_hash) await q('update users set password_hash = $2 where id = $1', [id, await bcrypt.hash(m.tel.slice(-4), 10)]);
     if (u.role === 'eleve' && m.statut === 'actif' && m.parent_tel) await lierParent(m.parent_tel, id);
   },
 
   async ajouterEleve(d) {
-    const tel = normTel(d.tel);
-    if (!t(d.nom) || tel.length < 7) throw fail(400, 'Le nom et le téléphone sont obligatoires.');
-    const [x] = await q('select 1 from users where tel = $1', [tel]);
-    if (x) throw fail(409, 'Ce numéro est déjà inscrit.');
-    const pw = String(d.password || tel.slice(-4));
+    const tel = normTel(d.tel) || null;
+    if (!t(d.nom)) throw fail(400, 'Le nom est obligatoire.');
+    if (tel && tel.length < 7) throw fail(400, 'Numéro de téléphone incomplet.');
+    if (tel) {
+      const [x] = await q('select 1 from users where tel = $1', [tel]);
+      if (x) throw fail(409, 'Ce numéro est déjà inscrit.');
+    }
+    const pw = tel ? String(d.password || tel.slice(-4)) : null;
     const id = uid('u');
     await q(`insert into users (id, role, statut, nom, tel, password_hash, niveau, ecole, parent_tel, adresse, tarif, classe_ids)
              values ($1,'eleve','actif',$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
-      [id, t(d.nom, 200), tel, await bcrypt.hash(pw, 10), t(d.niveau, 200), t(d.ecole, 200), normTel(d.parentTel) || null, t(d.adresse, 300), int(d.tarif), arr(d.classeIds)]);
+      [id, t(d.nom, 200), tel, pw ? await bcrypt.hash(pw, 10) : null, t(d.niveau, 200), t(d.ecole, 200), normTel(d.parentTel) || null, t(d.adresse, 300), int(d.tarif), arr(d.classeIds)]);
     if (d.parentTel) await lierParent(d.parentTel, id);
   },
   async supprimerUser({ id }) {
