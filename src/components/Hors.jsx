@@ -12,7 +12,7 @@ export default function Hors() {
   if (!off) return null;
   return (
     <div className="demo pad" role="status">
-      Hors connexion : vous voyez les cours déjà ouverts. Les envois reprendront au retour du réseau.
+      Hors connexion : vous voyez les cours déjà ouverts. Pour envoyer un devoir ou un message, attendez le retour du réseau.
     </div>
   );
 }
